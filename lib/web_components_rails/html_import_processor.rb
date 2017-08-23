@@ -6,7 +6,7 @@ require 'securerandom'
 #   https://github.com/rails/sprockets/blob/3.x/lib/sprockets/directive_processor.rb
 class WebComponentsRails::HTMLImportProcessor
 
-  VERSION = '9'
+  VERSION = '10'
 
   def self.instance
     @instance ||= new
@@ -56,6 +56,7 @@ class WebComponentsRails::HTMLImportProcessor
     @data = input[:data]
     @filename = input[:filename]
     @dirname = File.dirname(@filename)
+    @input = input
 
     @data, paths = process_imports(@data, @dirname)
     paths.each do |path|
@@ -112,6 +113,13 @@ class WebComponentsRails::HTMLImportProcessor
             nil
         end
       end.compact
+
+      doc.css('script:not([src])').each do |script|
+        compiled = Rails.application.assets.engines['.es6'].call(@input.merge(
+          data: script.content
+        ))
+        script.content = compiled[:data]
+      end
 
       # Script/JS imports should just have their src rewritten to work with sprockets
       # (because they could repeat a lot, and we can't mark non-HTML files as dependencies)
